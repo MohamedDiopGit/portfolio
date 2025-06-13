@@ -64,11 +64,11 @@ export default function PortfolioMain() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100 overflow-x-hidden">
       <header className={`sticky top-0 z-50 backdrop-blur bg-white/80 dark:bg-black/95 transition-shadow ${scrolled ? "shadow-lg" : "shadow"}`}>
-        <div className="max-w-7xl mx-auto flex justify-between items-center p-6 px-4 sm:px-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen />
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center p-3 sm:p-6 px-2 sm:px-4 md:px-6 gap-2 sm:gap-0">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />
             <span
               className="relative inline-block bg-gradient-to-r from-pink-500 via-yellow-400 to-blue-500 bg-[length:200%_200%] bg-clip-text text-transparent animate-gradient-shimmer"
               style={{
@@ -83,14 +83,14 @@ export default function PortfolioMain() {
             </span>
             <span className="animate-bounce text-green-600 dark:text-green-400">🌱</span>
           </h1>
-          <nav className="flex items-center space-x-4">
+          <nav className="flex flex-wrap items-center justify-center space-x-2 sm:space-x-4 mt-2 sm:mt-0">
             {["portfolio", "blog", "explore"].map((t) => (
               <button
                 key={t}
                 onClick={() => { setTab(t); setSelected(null); }}
-                className={`px-3 py-1 rounded transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400
+                className={`px-2 sm:px-3 py-1 rounded transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400
                   hover:scale-105 hover:bg-gray-300 dark:hover:bg-neutral-900
-                  ${tab === t ? "bg-gray-200 dark:bg-neutral-800" : ""}`}
+                  ${tab === t ? "bg-gray-200 dark:bg-neutral-800" : ""} text-xs sm:text-base`}
               >
                 {t.charAt(0).toUpperCase() + t.slice(1).replace("portfolio", "Portfolio").replace("blog", "Blog").replace("explore", "Explore ideas")}
               </button>
@@ -101,7 +101,7 @@ export default function PortfolioMain() {
               rel="noopener noreferrer"
               className="transition-transform duration-200 hover:scale-125 hover:text-purple-600 dark:hover:text-purple-400"
             >
-              <Github />
+              <Github className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
             <a
               href={LINKEDIN_URL}
@@ -109,13 +109,13 @@ export default function PortfolioMain() {
               rel="noopener noreferrer"
               className="transition-transform duration-200 hover:scale-125 hover:text-blue-700 dark:hover:text-blue-400"
             >
-              <Linkedin />
+              <Linkedin className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
             <button
               onClick={toggleTheme}
               className="transition-transform duration-200 hover:scale-125 hover:text-yellow-500 dark:hover:text-yellow-300"
             >
-              {theme === "light" ? <Moon /> : <Sun />}
+              {theme === "light" ? <Moon className="w-5 h-5 sm:w-6 sm:h-6" /> : <Sun className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
           </nav>
         </div>
@@ -139,7 +139,7 @@ export default function PortfolioMain() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -30, scale: 0.98 }}
             transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="p-6 space-y-24 max-w-7xl mx-auto px-4 sm:px-6"
+            className="p-2 sm:p-6 space-y-12 sm:space-y-24 max-w-7xl mx-auto px-1 sm:px-4 md:px-6"
           >
             {/* Présentation */}
             <motion.section
@@ -147,10 +147,10 @@ export default function PortfolioMain() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
-              className="text-center max-w-3xl mx-auto space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
+              className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
             >
-              <h2 className="text-3xl font-semibold">Software Engineer. Rooted in vision.</h2>
-              <p className="opacity-80 text-base md:text-lg">I’m Mohamed — driven by purpose, depth, and clarity. I build clean systems, design thoughtful products, and believe in quiet strength. Currently thinking from Augsburg.</p>
+              <h2 className="text-2xl sm:text-3xl font-semibold">Software Engineer. Rooted in vision.</h2>
+              <p className="opacity-80 text-sm sm:text-base md:text-lg">I’m Mohamed — driven by purpose, depth, and clarity. I build clean systems, design thoughtful products, and believe in quiet strength. Currently thinking from Augsburg.</p>
             </motion.section>
             {/* Expérience */}
             <motion.section
@@ -158,20 +158,20 @@ export default function PortfolioMain() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-              className="max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
+              className="max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
             >
-              <h3 className="text-2xl font-semibold mb-6 text-center">Experience ⛰️</h3>
-              <div className="relative ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
+              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Experience ⛰️</h3>
+              <div className="relative ml-2 sm:ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
                 {experiences.map((exp, i) => (
                   <motion.div
                     key={i}
                     whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="mb-8 pl-6 relative transition-all duration-300"
+                    className="mb-6 sm:mb-8 pl-4 sm:pl-6 relative transition-all duration-300"
                   >
-                    <span className="absolute -left-3 mt-1 w-4 h-4 bg-blue-500 rounded-full dark:bg-blue-400"></span>
-                    <div className="flex items-center space-x-2 mb-1"><Briefcase /><h4 className="font-bold text-lg">{exp.role} @ {exp.company}</h4></div>
-                    <p className="text-sm opacity-70 mb-2">{exp.period} · {exp.location}</p>
-                    <ul className="list-disc list-inside space-y-1 text-sm opacity-80">
+                    <span className="absolute -left-3 mt-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full dark:bg-blue-400"></span>
+                    <div className="flex items-center space-x-2 mb-1"><Briefcase className="w-4 h-4" /><h4 className="font-bold text-base sm:text-lg">{exp.role} @ {exp.company}</h4></div>
+                    <p className="text-xs sm:text-sm opacity-70 mb-2">{exp.period} · {exp.location}</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm opacity-80">
                       {exp.bullets.map((b, j) => <li key={j}>{b}</li>)}
                     </ul>
                   </motion.div>
@@ -184,20 +184,20 @@ export default function PortfolioMain() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-              className="max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
+              className="max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
             >
-              <h3 className="text-2xl font-semibold mb-6 text-center">Education 🎓</h3>
-              <div className="relative ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
+              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Education 🎓</h3>
+              <div className="relative ml-2 sm:ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
                 {educationItems.map((edu, i) => (
                   <motion.div
                     key={i}
                     whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="mb-8 pl-6 relative transition-all duration-300"
+                    className="mb-6 sm:mb-8 pl-4 sm:pl-6 relative transition-all duration-300"
                   >
-                    <span className="absolute -left-3 mt-1 w-4 h-4 bg-green-500 rounded-full dark:bg-green-400"></span>
-                    <div className="flex items-center space-x-2 mb-1"><GraduationCap /><h4 className="font-bold text-lg">{edu.degree} @ {edu.institution}</h4></div>
-                    <p className="text-sm opacity-70 mb-2">{edu.period} · {edu.location}</p>
-                    <ul className="list-disc list-inside space-y-1 text-sm opacity-80">
+                    <span className="absolute -left-3 mt-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full dark:bg-green-400"></span>
+                    <div className="flex items-center space-x-2 mb-1"><GraduationCap className="w-4 h-4" /><h4 className="font-bold text-base sm:text-lg">{edu.degree} @ {edu.institution}</h4></div>
+                    <p className="text-xs sm:text-sm opacity-70 mb-2">{edu.period} · {edu.location}</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm opacity-80">
                       {edu.bullets.map((b, j) => <li key={j}>{b}</li>)}
                     </ul>
                   </motion.div>
@@ -210,19 +210,19 @@ export default function PortfolioMain() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-              className="max-w-5xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
+              className="max-w-5xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
             >
-              <h3 className="text-2xl font-semibold mb-6 text-center">Lessons through the journey 💭</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Lessons through the journey 💭</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 {lessons.map((l, i) => (
                   <motion.div
                     key={i}
                     whileHover={{ scale: 1.03, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="border rounded-lg p-6 bg-white dark:bg-neutral-950 transition-all duration-300"
+                    className="border rounded-lg p-4 sm:p-6 bg-white dark:bg-neutral-950 transition-all duration-300"
                   >
-                    <div className="flex items-center space-x-2 mb-2"><Quote /><h4 className="font-semibold truncate">{l.title}</h4></div>
-                    <blockquote className="italic opacity-70 mb-2">“{l.quote}” - {l.author}</blockquote>
-                    <p className="text-sm opacity-80">{l.note}</p>
+                    <div className="flex items-center space-x-2 mb-2"><Quote className="w-4 h-4" /><h4 className="font-semibold truncate">{l.title}</h4></div>
+                    <blockquote className="italic opacity-70 mb-2 text-xs sm:text-base">“{l.quote}” - {l.author}</blockquote>
+                    <p className="text-xs sm:text-sm opacity-80">{l.note}</p>
                   </motion.div>
                 ))}
               </div>
@@ -233,10 +233,10 @@ export default function PortfolioMain() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }}
-              className="max-w-lg mx-auto text-center space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
+              className="max-w-lg mx-auto text-center space-y-3 sm:space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
             >
-              <h3 className="text-2xl font-semibold">Let's build something meaningful</h3>
-              <p className="opacity-80">Whether a question, a challenge or a shared vision—I'm here. (Or just say Hi 👋🏾)</p>
+              <h3 className="text-xl sm:text-2xl font-semibold">Let's build something meaningful</h3>
+              <p className="opacity-80 text-xs sm:text-base">Whether a question, a challenge or a shared vision—I'm here. (Or just say Hi 👋🏾)</p>
               <ContactForm />
             </motion.section>
           </motion.main>
@@ -415,5 +415,16 @@ function ContactForm() {
         <p className="text-green-600 mt-2 text-center">Message ready to send! Your email client should open.</p>
       )}
     </form>
+  );
+}
+
+export function Head() {
+  return (
+    <>
+      <title>Mohamed Diop - Portfolio</title>
+      <meta name="description" content="Welcome to my portfolio. I am Mohamed Diop, a Software Engineer." />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link rel="icon" href="/favicon.ico" />
+    </>
   );
 }
