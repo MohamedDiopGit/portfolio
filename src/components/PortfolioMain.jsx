@@ -17,6 +17,7 @@ export default function PortfolioMain() {
   const [selected, setSelected] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
     // Prend le thème localStorage ou le système si rien n'est stocké
@@ -50,6 +51,21 @@ export default function PortfolioMain() {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    setHasLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    // Scroll toujours en haut au chargement initial, même après animations/layout
+    const scrollToTop = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    // Premier tick
+    scrollToTop();
+    // Deuxième tick pour forcer après layout/animations
+    setTimeout(scrollToTop, 50);
+    // Troisième tick pour garantir après tous les effets
+    setTimeout(scrollToTop, 200);
   }, []);
 
   const toggleTheme = () => {
@@ -132,7 +148,7 @@ export default function PortfolioMain() {
             <span className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></span>
           </motion.div>
         )}
-        {tab === "portfolio" && (
+        {tab === "portfolio" && hasLoaded && (
           <motion.main
             key={tab}
             initial={{ opacity: 0, y: 30, scale: 0.98 }}
@@ -345,7 +361,10 @@ export default function PortfolioMain() {
           </motion.main>
         )}
       </AnimatePresence>
-      <footer className="text-center py-8 text-xs opacity-60">© {new Date().getFullYear()} Mohamed Diop</footer>
+      {/* Afficher le footer seulement quand le contenu principal est prêt */}
+      {(!isLoading && (!hasLoaded ? false : true)) && (
+        <footer className="text-center py-8 text-xs opacity-60">© {new Date().getFullYear()} Mohamed Diop</footer>
+      )}
     </div>
   );
 }
@@ -415,16 +434,5 @@ function ContactForm() {
         <p className="text-green-600 mt-2 text-center">Message ready to send! Your email client should open.</p>
       )}
     </form>
-  );
-}
-
-export function Head() {
-  return (
-    <>
-      <title>Mohamed Diop - Portfolio</title>
-      <meta name="description" content="Welcome to my portfolio. I am Mohamed Diop, a Software Engineer." />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <link rel="icon" href="/favicon.ico" />
-    </>
   );
 }
