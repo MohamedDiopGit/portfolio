@@ -99,7 +99,7 @@ export default function PortfolioMain() {
               href={`https://github.com/${GITHUB_USERNAME}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-transform duration-200 hover:scale-125 hover:text-black dark:hover:text-white"
+              className="transition-transform duration-200 hover:scale-125 hover:text-purple-600 dark:hover:text-purple-400"
             >
               <Github />
             </a>
@@ -150,7 +150,7 @@ export default function PortfolioMain() {
               className="text-center max-w-3xl mx-auto space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
             >
               <h2 className="text-3xl font-semibold">Software Engineer. Rooted in vision.</h2>
-              <p className="opacity-80 text-base md:text-lg">I’m Mohamed — driven by purpose, depth, and clarity. I build clean systems, design thoughtful products, and believe in quiet strength. Currently thinking from Augsburg. 🌱</p>
+              <p className="opacity-80 text-base md:text-lg">I’m Mohamed — driven by purpose, depth, and clarity. I build clean systems, design thoughtful products, and believe in quiet strength. Currently thinking from Augsburg.</p>
             </motion.section>
             {/* Expérience */}
             <motion.section
