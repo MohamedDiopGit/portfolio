@@ -1,10 +1,19 @@
-
 const lessons = [
   {
     title: "Clear thinkers appeal to their own authority",
     quote: "Clear thinkers appeal to their own authority because they trust the clarity of their logic.",
-    note: "I cultivate first‑principles thinking and avoid second‑hand opinions."
+    note: "Trust your own reasoning and logic.",
+  },
+  {
+    title: "Escape competition through authenticity",
+    quote: "No one can compete with you on being you.",
+    note: "Be authentic, embrace your unique perspective and experiences."
+  },
+  {
+    title: "Earn with your mind, not your time",
+    quote: "Productize yourself.",
+    note: "Focus on creating scalable products or services that leverage your skills and knowledge.",
   }
-  // ... add more
 ];
+
 export default lessons;
