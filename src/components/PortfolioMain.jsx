@@ -278,17 +278,28 @@ export default function PortfolioMain() {
                 <article>
                   <h2 className="text-3xl font-bold mb-8">My Ruminations ✍️</h2>
                   <div className="space-y-8">
+                    {blogPosts.length === 0 && (
+                      <div className="text-gray-500">No blog posts found.</div>
+                    )}
                     {blogPosts.map(post => (
                       <motion.div
                         key={post.slug}
                         whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
                         className="border-b pb-4 transition-all duration-300"
                       >
-                        <button onClick={() => setSelected(post)} className="text-xl font-semibold text-blue-600 hover:underline">{post.title}</button>
+                        <button
+                          onClick={() => setSelected(post)}
+                          className="text-xl font-semibold text-blue-600 hover:underline"
+                        >
+                          {post.title}
+                        </button>
                         <p className="text-xs text-gray-500 mt-1">{post.date}</p>
                         <div className="mt-2 text-gray-700 dark:text-gray-300">
                           <div className="prose dark:prose-invert">
-                            <ReactMarkdown>{post.content.slice(0, 200) + '...'}</ReactMarkdown>
+                            {/* Affiche le début du contenu */}
+                            <ReactMarkdown>
+                              {post.content.slice(0, 200) + (post.content.length > 200 ? '...' : '')}
+                            </ReactMarkdown>
                           </div>
                         </div>
                       </motion.div>
