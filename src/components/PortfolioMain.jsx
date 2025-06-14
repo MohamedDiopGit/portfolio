@@ -1,449 +1,251 @@
-import React, { useEffect, useState } from "react";
-import { Github, Linkedin, Star, Sun, Moon, Quote, Briefcase, GraduationCap, BookOpen } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
-import blogPosts from "../data/blogPosts";
+import React from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import experiences from "../data/experiences";
 import educationItems from "../data/education";
+import projects from "../data/projects";
 import lessons from "../data/lessons";
-import exploreIdeasResources from "../data/exploreIdeas";
 
-const GITHUB_USERNAME = "MohamedDiopGit";
-const LINKEDIN_URL = "https://www.linkedin.com/in/mohamed-diop-info/";
 
-export default function PortfolioMain() {
-  const [theme, setTheme] = useState("light");
-  const [tab, setTab] = useState("portfolio");
-  const [selected, setSelected] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [hasLoaded, setHasLoaded] = useState(false);
-
-  useEffect(() => {
-    // Prend le thème localStorage ou le système si rien n'est stocké
-    const stored = localStorage.getItem("theme");
-    const system = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    const initial = stored || system;
-    setTheme(initial);
-    if (initial === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-
-    // Écoute les changements système
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = (e) => {
-      if (!localStorage.getItem("theme")) {
-        setTheme(e.matches ? "dark" : "light");
-        if (e.matches) {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
-      }
-    };
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    setHasLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    // Scroll toujours en haut au chargement initial, même après animations/layout
-    const scrollToTop = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    // Premier tick
-    scrollToTop();
-    // Deuxième tick pour forcer après layout/animations
-    setTimeout(scrollToTop, 50);
-    // Troisième tick pour garantir après tous les effets
-    setTimeout(scrollToTop, 200);
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    localStorage.setItem("theme", next);
-    if (next === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
+// Barre de navigation responsive avec menu burger
+function HeaderBar() {
+  const [open, setOpen] = React.useState(false);
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100 overflow-x-hidden">
-      <header className={`sticky top-0 z-50 backdrop-blur bg-white/80 dark:bg-black/95 transition-shadow ${scrolled ? "shadow-lg" : "shadow"}`}>
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center p-3 sm:p-6 px-2 sm:px-4 md:px-6 gap-2 sm:gap-0">
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />
-            <span
-              className="relative inline-block bg-gradient-to-r from-pink-500 via-yellow-400 to-blue-500 bg-[length:200%_200%] bg-clip-text text-transparent animate-gradient-shimmer"
-              style={{
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundSize: "200% 200%",
-                animation: "gradient-shimmer 3s linear infinite"
-              }}
-            >
-              Mohamed Diop
-            </span>
-            <span className="animate-bounce text-green-600 dark:text-green-400">🌱</span>
-          </h1>
-          <nav className="flex flex-wrap items-center justify-center space-x-2 sm:space-x-4 mt-2 sm:mt-0">
-            {["portfolio", "blog", "explore"].map((t) => (
-              <button
-                key={t}
-                onClick={() => { setTab(t); setSelected(null); }}
-                className={`px-2 sm:px-3 py-1 rounded transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400
-                  hover:scale-105 hover:bg-gray-300 dark:hover:bg-neutral-900
-                  ${tab === t ? "bg-gray-200 dark:bg-neutral-800" : ""} text-xs sm:text-base`}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1).replace("portfolio", "Portfolio").replace("blog", "Blog").replace("explore", "Explore ideas")}
-              </button>
-            ))}
-            <a
-              href={`https://github.com/${GITHUB_USERNAME}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition-transform duration-200 hover:scale-125 hover:text-purple-600 dark:hover:text-purple-400"
-            >
-              <Github className="w-5 h-5 sm:w-6 sm:h-6" />
-            </a>
-            <a
-              href={LINKEDIN_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition-transform duration-200 hover:scale-125 hover:text-blue-700 dark:hover:text-blue-400"
-            >
-              <Linkedin className="w-5 h-5 sm:w-6 sm:h-6" />
-            </a>
-            <button
-              onClick={toggleTheme}
-              className="transition-transform duration-200 hover:scale-125 hover:text-yellow-500 dark:hover:text-yellow-300"
-            >
-              {theme === "light" ? <Moon className="w-5 h-5 sm:w-6 sm:h-6" /> : <Sun className="w-5 h-5 sm:w-6 sm:h-6" />}
-            </button>
-          </nav>
+    <header className="fixed top-0 left-0 w-full z-50 bg-white/75 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+      <nav className="max-w-3xl mx-auto flex items-center justify-between px-4 py-2 md:py-3">
+        <span className="font-bold text-lg md:text-xl tracking-tight">Mohamed Diop</span>
+        {/* Desktop nav */}
+        <div className="hidden sm:flex gap-4 text-sm md:text-base">
+          <a href="#hero" className="hover:underline hover:text-black/90">Accueil</a>
+          <a href="#experience" className="hover:underline hover:text-black/90">Expérience</a>
+          <a href="#education" className="hover:underline hover:text-black/90">Éducation</a>
+          <a href="#projects" className="hover:underline hover:text-black/90">Projets</a>
+          <a href="#lessons" className="hover:underline hover:text-black/90">Leçons</a>
+          <a href="#contact" className="hover:underline hover:text-black/90">Contact</a>
         </div>
-      </header>
-      <AnimatePresence mode="wait" initial={false} onExitComplete={() => window.scrollTo(0, 0)}>
-        {isLoading && (
-          <motion.div
-            key="loader"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-black/90 z-50"
-          >
-            <span className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></span>
-          </motion.div>
+        {/* Burger menu for mobile */}
+        <button
+          className="sm:hidden flex flex-col justify-center items-center w-8 h-8"
+          aria-label="Ouvrir le menu"
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span className={`block h-0.5 w-6 bg-gray-900 mb-1 transition-all ${open ? "rotate-45 translate-y-1.5" : ""}`}></span>
+          <span className={`block h-0.5 w-6 bg-gray-900 mb-1 transition-all ${open ? "opacity-0" : ""}`}></span>
+          <span className={`block h-0.5 w-6 bg-gray-900 transition-all ${open ? "-rotate-45 -translate-y-1.5" : ""}`}></span>
+        </button>
+        {/* Mobile nav */}
+        {open && (
+          <div className="absolute top-full left-0 w-full bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-sm flex flex-col items-center py-2 sm:hidden animate-fade-in z-50">
+            <a href="#hero" className="py-2 w-full text-center hover:bg-gray-50" onClick={() => setOpen(false)}>Accueil</a>
+            <a href="#experience" className="py-2 w-full text-center hover:bg-gray-50" onClick={() => setOpen(false)}>Expérience</a>
+            <a href="#education" className="py-2 w-full text-center hover:bg-gray-50" onClick={() => setOpen(false)}>Éducation</a>
+            <a href="#projects" className="py-2 w-full text-center hover:bg-gray-50" onClick={() => setOpen(false)}>Projets</a>
+            <a href="#lessons" className="py-2 w-full text-center hover:bg-gray-50" onClick={() => setOpen(false)}>Leçons</a>
+            <a href="#contact" className="py-2 w-full text-center hover:bg-gray-50" onClick={() => setOpen(false)}>Contact</a>
+          </div>
         )}
-        {tab === "portfolio" && hasLoaded && (
-          <motion.main
-            key={tab}
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.98 }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="p-2 sm:p-6 space-y-12 sm:space-y-24 max-w-7xl mx-auto px-1 sm:px-4 md:px-6"
-          >
-            {/* Présentation */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
-            >
-              <h2 className="text-2xl sm:text-3xl font-semibold">Software Engineer. Rooted in vision.</h2>
-              <p className="opacity-80 text-sm sm:text-base md:text-lg">I’m Mohamed — driven by purpose, depth, and clarity. I build clean systems, design thoughtful products, and believe in quiet strength. Currently thinking from Augsburg.</p>
-            </motion.section>
-            {/* Expérience */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-              className="max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
-            >
-              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Experience ⛰️</h3>
-              <div className="relative ml-2 sm:ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
-                {experiences.map((exp, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="mb-6 sm:mb-8 pl-4 sm:pl-6 relative transition-all duration-300"
-                  >
-                    <span className="absolute -left-3 mt-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full dark:bg-blue-400"></span>
-                    <div className="flex items-center space-x-2 mb-1"><Briefcase className="w-4 h-4" /><h4 className="font-bold text-base sm:text-lg">{exp.role} @ {exp.company}</h4></div>
-                    <p className="text-xs sm:text-sm opacity-70 mb-2">{exp.period} · {exp.location}</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm opacity-80">
-                      {exp.bullets.map((b, j) => <li key={j}>{b}</li>)}
-                    </ul>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-            {/* Education */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-              className="max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
-            >
-              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Education 🎓</h3>
-              <div className="relative ml-2 sm:ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
-                {educationItems.map((edu, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="mb-6 sm:mb-8 pl-4 sm:pl-6 relative transition-all duration-300"
-                  >
-                    <span className="absolute -left-3 mt-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full dark:bg-green-400"></span>
-                    <div className="flex items-center space-x-2 mb-1"><GraduationCap className="w-4 h-4" /><h4 className="font-bold text-base sm:text-lg">{edu.degree} @ {edu.institution}</h4></div>
-                    <p className="text-xs sm:text-sm opacity-70 mb-2">{edu.period} · {edu.location}</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm opacity-80">
-                      {edu.bullets.map((b, j) => <li key={j}>{b}</li>)}
-                    </ul>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-            {/* Lessons */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-              className="max-w-5xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
-            >
-              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Lessons through the journey 💭</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                {lessons.map((l, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="border rounded-lg p-4 sm:p-6 bg-white dark:bg-neutral-950 transition-all duration-300"
-                  >
-                    <div className="flex items-center space-x-2 mb-2"><Quote className="w-4 h-4" /><h4 className="font-semibold truncate">{l.title}</h4></div>
-                    <blockquote className="italic opacity-70 mb-2 text-xs sm:text-base">“{l.quote}” - {l.author}</blockquote>
-                    <p className="text-xs sm:text-sm opacity-80">{l.note}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-            {/* Contact */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }}
-              className="max-w-lg mx-auto text-center space-y-3 sm:space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
-            >
-              <h3 className="text-xl sm:text-2xl font-semibold">Let's build something meaningful</h3>
-              <p className="opacity-80 text-xs sm:text-base">Whether a question, a challenge or a shared vision—I'm here. (Or just say Hi 👋🏾)</p>
-              <ContactForm />
-            </motion.section>
-          </motion.main>
-        )}
-        {/* Blog Tab */}
-        {tab === "blog" && (
-          <motion.main
-            key="blog"
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.98 }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="p-6 max-w-3xl mx-auto px-4 sm:px-6"
-          >
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
-            >
-              {!selected ? (
-                <article>
-                  <h2 className="text-3xl font-bold mb-8">My Ruminations ✍️</h2>
-                  <div className="space-y-8">
-                    {blogPosts.length === 0 && (
-                      <div className="text-gray-500">No blog posts found.</div>
-                    )}
-                    {blogPosts.map(post => (
-                      <motion.div
-                        key={post.slug}
-                        whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                        className="border-b pb-4 transition-all duration-300"
-                      >
-                        <button
-                          onClick={() => setSelected(post)}
-                          className="text-xl font-semibold text-blue-600 hover:underline"
-                        >
-                          {post.title}
-                        </button>
-                        <p className="text-xs text-gray-500 mt-1">{post.date}</p>
-                        <div className="mt-2 text-gray-700 dark:text-gray-300">
-                          <div className="prose dark:prose-invert">
-                            {/* Affiche le début du contenu */}
-                            <ReactMarkdown>
-                              {post.content.slice(0, 200) + (post.content.length > 200 ? '...' : '')}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </article>
-              ) : (
-                <article>
-                  <button onClick={() => setSelected(null)} className="text-blue-600 hover:underline mb-4">← Back to articles</button>
-                  <div className="prose dark:prose-invert max-w-none">
-                    <ReactMarkdown>{selected.content}</ReactMarkdown>
-                  </div>
-                </article>
-              )}
-            </motion.section>
-          </motion.main>
-        )}
-        {/* Explore Ideas Tab */}
-        {tab === "explore" && (
-          <motion.main
-            key="explore"
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.98 }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="p-6 max-w-4xl mx-auto px-4 sm:px-6"
-          >
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
-            >
-              <h2 className="text-3xl font-bold mb-8 text-center">Explore Ideas</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {exploreIdeasResources.map((res, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="border rounded-lg p-6 bg-white dark:bg-neutral-950 flex flex-col justify-between transition-all duration-300"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        {res.type === "github" && <Github className="w-5 h-5" />} 
-                        {res.type === "article" && <BookOpen className="w-5 h-5" />} 
-                        {res.type === "webpage" && <BookOpen className="w-5 h-5" />} 
-                        {res.type === "twitter" && <span className="font-bold text-lg">🐦</span>} 
-                        <a
-                          href={res.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold underline hover:opacity-80 transition-colors text-gray-900 dark:text-gray-100"
-                        >
-                          {res.name}
-                        </a>
-                      </div>
-                      <p className="text-sm text-gray-500 mb-1">{res.author && `by ${res.author}`}</p>
-                      <p className="text-sm opacity-80 mb-2">{res.description}</p>
-                    </div>
-                    {res.stars && (
-                      <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
-                        <Star className="w-3 h-3" /> {res.stars.toLocaleString()} stars
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-          </motion.main>
-        )}
-      </AnimatePresence>
-      {/* Afficher le footer seulement quand le contenu principal est prêt */}
-      {(!isLoading && (!hasLoaded ? false : true)) && (
-        <footer className="text-center py-8 text-xs opacity-60">© {new Date().getFullYear()} Mohamed Diop</footer>
-      )}
-    </div>
+      </nav>
+    </header>
   );
 }
 
-function ContactForm() {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [status, setStatus] = useState(null);
-
-  const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = e => {
-    e.preventDefault();
-    // Pour la démo, on utilise mailto. Pour un vrai backend, remplacer ici.
-    const mailto = `mailto:diopm.contact@gmail.com?subject=Contact%20from%20${encodeURIComponent(form.name)}&body=${encodeURIComponent(form.message + "\n\nFrom: " + form.email)}`;
-    window.location.href = mailto;
-    setStatus("success");
-    setForm({ name: "", email: "", message: "" });
-  };
+// Section sticky responsive
+function StickySection({ children, id = "", img, minHeight = "min-h-[300vh]" }) { // Augmenté de 200vh à 300vh
+  const ref = React.useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start center", "end start"], // Modifié pour une plus longue durée sticky
+  });
+  
+  // Points de transition plus espacés
+  const scale = useTransform(scrollYProgress, 
+    [0, 0.1, 0.4, 0.9, 1], 
+    [0.8, 1, 1, 1, 0.8]
+  );
+  const opacity = useTransform(scrollYProgress, 
+    [0, 0.1, 0.4, 0.9, 1], 
+    [0.3, 1, 1, 1, 0.3]
+  );
+  const y = useTransform(scrollYProgress, 
+    [0, 0.1, 0.4, 0.9, 1], 
+    [100, 0, 0, 0, -100]
+  );
+  const bgOpacity = useTransform(scrollYProgress, 
+    [0, 0.1, 0.4, 0.9, 1], 
+    [0, 1, 1, 1, 0]
+  );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 text-left">
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="name">Your Name</label>
-        <input
-          className="w-full px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          type="text"
-          id="name"
-          name="name"
-          required
-          value={form.name}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="email">Your Email</label>
-        <input
-          className="w-full px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          type="email"
-          id="email"
-          name="email"
-          required
-          value={form.email}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="message">Your Message ✉️</label>
-        <textarea
-          className="w-full px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          id="message"
-          name="message"
-          rows={4}
-          required
-          value={form.message}
-          onChange={handleChange}
-        />
-      </div>
-      <button
-        type="submit"
-        className="w-full bg-black text-white dark:bg-white dark:text-black px-6 py-3 rounded-lg hover:scale-105 transition font-semibold"
+    <section
+      ref={ref}
+      id={id}
+      className={`relative ${minHeight} flex items-start justify-center py-[20vh]`}
+      style={{ zIndex: 1 }}
+    >
+      <motion.div
+        style={{
+          opacity: bgOpacity,
+          pointerEvents: "none",
+          position: "fixed",
+          inset: 0,
+          background: "white",
+          zIndex: 5,
+        }}
+        aria-hidden="true"
+      />
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0, y: 100 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{
+          scale,
+          opacity,
+          y,
+          willChange: "transform, opacity",
+          position: "sticky",
+          top: "15vh", // Ajusté pour un meilleur positionnement initial
+          zIndex: 10,
+          boxShadow: "0 8px 32px 0 rgba(0,0,0,0.18), 0 1.5px 8px 0 rgba(0,0,0,0.10)",
+          transition: "box-shadow 0.3s cubic-bezier(.4,0,.2,1)",
+        }}
+        className="w-[94vw] sm:w-[90vw] md:w-[85vw] max-w-3xl mx-auto flex flex-col 
+          rounded-2xl bg-white border-gray-200 shadow-lg"
       >
-        Send Message 🚀
-      </button>
-      {status === "success" && (
-        <p className="text-green-600 mt-2 text-center">Message ready to send! Your email client should open.</p>
-      )}
-    </form>
+        <div className="px-4 sm:px-8 md:px-12 py-6 sm:py-8 md:py-10 w-full">
+          {img && (
+            <img
+              src={img}
+              alt=""
+              className="w-16 h-16 xs:w-20 xs:h-20 md:w-24 md:h-24 mb-3 md:mb-6 rounded-xl shadow-md mx-auto"
+            />
+          )}
+          {children}
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+export default function PortfolioStickyAppleStyle() {
+  return (
+    <div className="bg-white text-gray-900 min-h-screen font-sans">
+      <HeaderBar />
+      <div className="pt-16 md:pt-20">
+        {/* HERO */}
+        <StickySection id="hero" minHeight="min-h-[120vh]">
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-6xl font-extrabold mb-2 xs:mb-3 md:mb-6 text-center">Mohamed Diop</h1>
+          <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-semibold mb-2 text-center">Software Engineer. Rooted in vision.</h2>
+          <p className="opacity-80 text-base xs:text-lg md:text-xl max-w-2xl text-center mb-2">
+            Driven by purpose, depth, and clarity. I build clean systems, design thoughtful products, and believe in quiet strength. 🌱
+          </p>
+        </StickySection>
+        {/* EXPERIENCE */}
+        <StickySection id="experience" minHeight="min-h-[200vh]">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold mb-2 xs:mb-4">Experience</h2>
+          <div className="flex flex-col gap-5 w-full">
+            {experiences.map((exp, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 sm:px-6 py-4 sm:py-5 transition-all mx-auto w-full"
+                style={{
+                  boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)",
+                  maxWidth: "600px",
+                }}
+              >
+                <div className="font-bold text-sm sm:text-lg md:text-xl mb-1 text-left">
+                  {exp.role} <span className="font-normal">@ {exp.company}</span>
+                </div>
+                <div className="text-xs sm:text-sm opacity-60 mb-2 text-left">
+                  {exp.period} · {exp.location}
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm md:text-base opacity-85 text-left overflow-x-auto">
+                  {exp.bullets.map((b, j) => (
+                    <li key={j}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </StickySection>
+        {/* EDUCATION */}
+        <StickySection id="education" minHeight="min-h-[200vh]">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold mb-2 xs:mb-4">Education</h2>
+          <div className="flex flex-col gap-5 w-full">
+            {educationItems.map((edu, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 sm:px-6 py-4 sm:py-5 transition-all mx-auto w-full"
+                style={{
+                  boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)",
+                  maxWidth: "600px",
+                }}
+              >
+                <div className="font-bold text-sm sm:text-lg md:text-xl mb-1 text-left">
+                  {edu.degree} <span className="font-normal">@ {edu.institution}</span>
+                </div>
+                <div className="text-xs sm:text-sm opacity-60 mb-2 text-left">
+                  {edu.period} · {edu.location}
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm md:text-base opacity-85 text-left overflow-x-auto">
+                  {edu.bullets.map((b, j) => (
+                    <li key={j}>{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </StickySection>
+        {/* PROJECTS */}
+        <StickySection id="projects" minHeight="min-h-[200vh]">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold mb-2 xs:mb-4">Featured Projects</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
+            {projects.map((proj, i) => (
+              <a key={i} href={proj.url} target="_blank" rel="noopener noreferrer"
+                className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 sm:px-6 py-4 sm:py-5 
+                  transition-all hover:bg-gray-50 block text-left"
+                style={{
+                  boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)",
+                }}
+              >
+                <div className="font-bold text-sm sm:text-lg md:text-xl mb-1">{proj.name}</div>
+                <div className="text-xs sm:text-sm md:text-base opacity-80">{proj.description}</div>
+              </a>
+            ))}
+          </div>
+        </StickySection>
+        {/* LESSONS */}
+        <StickySection id="lessons" minHeight="min-h-[200vh]">
+          <h2 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold mb-2 xs:mb-4">Naval Lessons</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
+            {lessons.map((l, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 sm:px-6 py-4 sm:py-5 transition-all"
+                style={{
+                  boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)",
+                }}
+              >
+                <div className="font-bold text-sm sm:text-lg md:text-xl mb-1">{l.title}</div>
+                <blockquote className="text-xs sm:text-sm md:text-base italic opacity-70 mb-2">"{l.quote}"</blockquote>
+                <div className="text-xs sm:text-sm md:text-base opacity-85">{l.note}</div>
+              </div>
+            ))}
+          </div>
+        </StickySection>
+        {/* CONTACT */}
+        <StickySection id="contact" minHeight="min-h-[120vh]">
+          <h2 className="text-lg xs:text-xl md:text-3xl font-bold mb-4">Let's Connect</h2>
+          <p className="mb-4 opacity-75 max-w-md text-center text-sm xs:text-base md:text-lg">
+            Whether you have a question, a challenge, or a shared vision—I'm here.
+          </p>
+          <a href="mailto:mohamed@example.com"
+            className="inline-block bg-black text-white px-4 xs:px-6 md:px-8 py-2 md:py-3 rounded-full font-bold shadow-lg hover:bg-gray-900 transition">
+            Say Hi
+          </a>
+        </StickySection>
+        <footer className="text-center py-8 text-xs opacity-60 text-gray-500">
+          © {new Date().getFullYear()} Mohamed Diop
+        </footer>
+      </div>
+    </div>
   );
 }
