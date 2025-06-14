@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Github, Linkedin, Star, Sun, Moon, Quote, Briefcase, GraduationCap, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -11,13 +11,29 @@ import exploreIdeasResources from "../data/exploreIdeas";
 const GITHUB_USERNAME = "MohamedDiopGit";
 const LINKEDIN_URL = "https://www.linkedin.com/in/mohamed-diop-info/";
 
+// Optimisation du throttle avec requestAnimationFrame
+const throttle = (func) => {
+  let frame;
+  return (...params) => {
+    if (frame) cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      func(...params);
+    });
+  };
+};
+
 export default function PortfolioMain() {
   const [theme, setTheme] = useState("light");
   const [tab, setTab] = useState("portfolio");
   const [selected, setSelected] = useState(null);
+  const [activeSection, setActiveSection] = useState("about");
   const [isLoading, setIsLoading] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+
+  const portfolioNavRef = React.useRef(null);
+  const [scrollMenuAtStart, setScrollMenuAtStart] = useState(true);
+  const [scrollMenuAtEnd, setScrollMenuAtEnd] = useState(false);
 
   useEffect(() => {
     // Prend le thème localStorage ou le système si rien n'est stocké
@@ -53,21 +69,93 @@ export default function PortfolioMain() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Correction : évite le scroll "bloqué" au chargement initial
   useEffect(() => {
     setHasLoaded(true);
+    // Supprime le scrollToTop automatique qui casse le scroll natif
+    // ...ne rien faire ici...
   }, []);
 
+  // Placez handlePortfolioNavScroll AVANT scrollToSection et les useEffect qui l'utilisent
+  const handlePortfolioNavScroll = useCallback(() => {
+    const nav = portfolioNavRef.current;
+    if (!nav) return;
+
+    // Check scroll position
+    const isStart = nav.scrollLeft <= 2;
+    const isEnd = Math.abs(nav.scrollLeft + nav.clientWidth - nav.scrollWidth) <= 2;
+    
+    setScrollMenuAtStart(isStart);
+    setScrollMenuAtEnd(isEnd);
+  }, []);
+
+  const scrollToSection = useCallback((sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (!element) return;
+
+    const isMobile = window.innerWidth < 640;
+    const header = isMobile ? 64 : 88;
+    const subnav = isMobile ? 44 : 56;
+    const extra = isMobile ? 40 : 56;
+    const offset = header + subnav + extra;
+
+    const top = element.offsetTop - offset;
+    window.scrollTo({ top, behavior: "smooth" });
+  }, []);
+
+  // Separate effect for section visibility and nav state
   useEffect(() => {
-    // Scroll toujours en haut au chargement initial, même après animations/layout
-    const scrollToTop = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    // Premier tick
-    scrollToTop();
-    // Deuxième tick pour forcer après layout/animations
-    setTimeout(scrollToTop, 50);
-    // Troisième tick pour garantir après tous les effets
-    setTimeout(scrollToTop, 200);
-  }, []);
+    if (tab !== "portfolio") return;
 
+    const handleScroll = throttle(() => {
+      const isMobile = window.innerWidth < 640;
+      const header = isMobile ? 64 : 88;
+      const subnav = isMobile ? 44 : 56;
+      const extra = isMobile ? 40 : 56;
+      const scrollPosition = window.scrollY + header + subnav + extra;
+
+      // Update active section
+      const sections = ["about", "experience", "education", "lessons", "contact"];
+      const current = sections.find(id => {
+        const el = document.getElementById(id);
+        if (!el) return false;
+        const top = el.offsetTop - 100; // Some tolerance
+        const bottom = top + el.offsetHeight;
+        return scrollPosition >= top && scrollPosition <= bottom;
+      }) || "about";
+
+      setActiveSection(current);
+
+      // Update arrow states based on active section
+      setScrollMenuAtStart(current === "about");
+      setScrollMenuAtEnd(current === "contact");
+    });
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll(); // Check initial state
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [tab]);
+
+  // Correction : meilleure gestion des flèches selon la section active
+  useEffect(() => {
+    if (tab !== "portfolio") return;
+    const nav = portfolioNavRef.current;
+    if (!nav) return;
+    const sectionOrder = ["about", "experience", "education", "lessons", "contact"];
+    const idx = sectionOrder.indexOf(activeSection);
+    if (idx === 0) {
+      setScrollMenuAtStart(true);
+      setScrollMenuAtEnd(false);
+    } else if (idx === sectionOrder.length - 1) {
+      setScrollMenuAtStart(false);
+      setScrollMenuAtEnd(true);
+    } else {
+      setScrollMenuAtStart(false);
+      setScrollMenuAtEnd(false);
+    }
+  }, [activeSection, tab]);
+
+  // Fonction pour changer le thème
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
@@ -79,9 +167,17 @@ export default function PortfolioMain() {
     }
   };
 
+  useEffect(() => {
+    // Vérifie la position initiale au montage
+    handlePortfolioNavScroll();
+    // Ajoute un resize listener pour réévaluer à chaque resize
+    window.addEventListener("resize", handlePortfolioNavScroll);
+    return () => window.removeEventListener("resize", handlePortfolioNavScroll);
+  }, [handlePortfolioNavScroll]);
+
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100 overflow-x-hidden">
-      <header className={`sticky top-0 z-50 backdrop-blur bg-white/80 dark:bg-black/95 transition-shadow ${scrolled ? "shadow-lg" : "shadow"}`}>
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100 overflow-x-hidden scroll-smooth">
+      <header className={`fixed top-0 left-0 w-full z-50 backdrop-blur bg-white/80 dark:bg-black/95 transition-shadow ${scrolled ? "shadow-lg" : "shadow"}`}>
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center p-3 sm:p-6 px-2 sm:px-4 md:px-6 gap-2 sm:gap-0">
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -135,247 +231,332 @@ export default function PortfolioMain() {
             </button>
           </nav>
         </div>
+        {/* Sous-navigation pour Portfolio */}
+        {tab === "portfolio" && (
+          <div className="border-t border-gray-200/20 bg-white/95 dark:bg-black/95 relative">
+            <div className="flex items-center w-full">
+              {/* Flèche gauche */}
+              <button
+                type="button"
+                aria-label="Scroll left"
+                className={`ml-1 mr-2 z-10 rounded-full shadow-md p-1 flex items-center justify-center transition hover:scale-110 disabled:opacity-30
+                  ${!scrollMenuAtStart ? "bg-white dark:bg-black text-black dark:text-white" : "bg-gray-200 dark:bg-neutral-800 text-gray-400"}`}
+                onClick={() => {
+                  const nav = document.getElementById("portfolio-sections-nav");
+                  if (nav) nav.scrollBy({ left: -150, behavior: "smooth" });
+                  setTimeout(() => handlePortfolioNavScroll(), 350);
+                }}
+                disabled={scrollMenuAtStart}
+                style={{ minWidth: 32, minHeight: 32 }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M15 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              {/* Barre de navigation scrollable */}
+              <div className="overflow-x-auto scrollbar-hide flex-1" style={{ WebkitOverflowScrolling: "touch" }}>
+                <nav
+                  id="portfolio-sections-nav"
+                  ref={portfolioNavRef}
+                  className="max-w-7xl mx-auto px-2 sm:px-4 flex items-center justify-start md:justify-center space-x-4 sm:space-x-8 relative"
+                  style={{ scrollBehavior: "smooth" }}
+                  onScroll={handlePortfolioNavScroll}
+                >
+                  {[
+                    { id: "about", label: "About", emoji: "👋" },
+                    { id: "experience", label: "Experience", emoji: "💼" },
+                    { id: "education", label: "Education", emoji: "🎓" },
+                    { id: "lessons", label: "Lessons", emoji: "💡" },
+                    { id: "contact", label: "Contact", emoji: "✉️" }
+                  ].map(({ id, label, emoji }) => (
+                    <button
+                      key={id}
+                      onClick={() => scrollToSection(id)}
+                      className={`py-3 px-1 border-b-2 transition-colors whitespace-nowrap text-sm hover:text-blue-500
+                        ${activeSection === id 
+                          ? "border-blue-500 text-blue-500 dark:text-blue-400" 
+                          : "border-transparent hover:border-gray-300"}`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span>{emoji}</span>
+                        <span>{label}</span>
+                      </span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+              {/* Flèche droite */}
+              <button
+                type="button"
+                aria-label="Scroll right"
+                className={`ml-2 mr-1 z-10 rounded-full shadow-md p-1 flex items-center justify-center transition hover:scale-110 disabled:opacity-30
+                  ${!scrollMenuAtEnd ? "bg-white dark:bg-black text-black dark:text-white" : "bg-gray-200 dark:bg-neutral-800 text-gray-400"}`}
+                onClick={() => {
+                  const nav = document.getElementById("portfolio-sections-nav");
+                  if (nav) nav.scrollBy({ left: 150, behavior: "smooth" });
+                  setTimeout(() => handlePortfolioNavScroll(), 350);
+                }}
+                disabled={scrollMenuAtEnd}
+                style={{ minWidth: 32, minHeight: 32 }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
-      <AnimatePresence mode="wait" initial={false} onExitComplete={() => window.scrollTo(0, 0)}>
-        {isLoading && (
-          <motion.div
-            key="loader"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-black/90 z-50"
-          >
-            <span className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></span>
-          </motion.div>
-        )}
-        {tab === "portfolio" && hasLoaded && (
-          <motion.main
-            key={tab}
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.98 }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="p-2 sm:p-6 space-y-12 sm:space-y-24 max-w-7xl mx-auto px-1 sm:px-4 md:px-6"
-          >
-            {/* Présentation */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
+      {/* Padding top responsive pour mobile/desktop, augmenté */}
+      <div className="pt-[148px] sm:pt-[200px]">
+        <AnimatePresence mode="wait" initial={false} onExitComplete={() => window.scrollTo(0, 0)}>
+          {isLoading && (
+            <motion.div
+              key="loader"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-black/90 z-50"
             >
-              <h2 className="text-2xl sm:text-3xl font-semibold">Software Engineer. Rooted in vision.</h2>
-              <p className="opacity-80 text-sm sm:text-base md:text-lg">I’m Mohamed — driven by purpose, depth, and clarity. I build clean systems, design thoughtful products, and believe in quiet strength. Currently thinking from Augsburg.</p>
-            </motion.section>
-            {/* Expérience */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-              className="max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
+              <span className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></span>
+            </motion.div>
+          )}
+          {tab === "portfolio" && hasLoaded && (
+            <motion.main
+              key={tab}
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.98 }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className="p-2 sm:p-6 space-y-12 sm:space-y-24 max-w-7xl mx-auto px-1 sm:px-4 md:px-6"
             >
-              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Experience ⛰️</h3>
-              <div className="relative ml-2 sm:ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
-                {experiences.map((exp, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="mb-6 sm:mb-8 pl-4 sm:pl-6 relative transition-all duration-300"
-                  >
-                    <span className="absolute -left-3 mt-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full dark:bg-blue-400"></span>
-                    <div className="flex items-center space-x-2 mb-1"><Briefcase className="w-4 h-4" /><h4 className="font-bold text-base sm:text-lg">{exp.role} @ {exp.company}</h4></div>
-                    <p className="text-xs sm:text-sm opacity-70 mb-2">{exp.period} · {exp.location}</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm opacity-80">
-                      {exp.bullets.map((b, j) => <li key={j}>{b}</li>)}
-                    </ul>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-            {/* Education */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-              className="max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
+              {/* Présentation */}
+              <motion.section
+                id="about"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="relative text-center max-w-3xl mx-auto space-y-3 sm:space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8 mt-0
+                  before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-3 before:shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.10)] before:rounded-t-xl"
+              >
+                <h2 className="text-2xl sm:text-3xl font-semibold">Software Engineer. Rooted in vision.</h2>
+                <p className="opacity-80 text-sm sm:text-base md:text-lg">I’m Mohamed — driven by purpose, depth, and clarity. I build clean systems, design thoughtful products, and believe in quiet strength. Currently thinking from Augsburg.</p>
+              </motion.section>
+              {/* Expérience */}
+              <motion.section
+                id="experience"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+                className="relative max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8 mt-12
+                  before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-3 before:shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.10)] before:rounded-t-xl"
+              >
+                <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Experience ⛰️</h3>
+                <div className="relative ml-2 sm:ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
+                  {experiences.map((exp, i) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+                      className="mb-6 sm:mb-8 pl-4 sm:pl-6 relative transition-all duration-300"
+                    >
+                      <span className="absolute -left-3 mt-1 w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full dark:bg-blue-400"></span>
+                      <div className="flex items-center space-x-2 mb-1"><Briefcase className="w-4 h-4" /><h4 className="font-bold text-base sm:text-lg">{exp.role} @ {exp.company}</h4></div>
+                      <p className="text-xs sm:text-sm opacity-70 mb-2">{exp.period} · {exp.location}</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm opacity-80">
+                        {exp.bullets.map((b, j) => <li key={j}>{b}</li>)}
+                      </ul>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.section>
+              {/* Education */}
+              <motion.section
+                id="education"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                className="relative max-w-4xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8 mt-12
+                  before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-3 before:shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.10)] before:rounded-t-xl"
+              >
+                <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Education 🎓</h3>
+                <div className="relative ml-2 sm:ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
+                  {educationItems.map((edu, i) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+                      className="mb-6 sm:mb-8 pl-4 sm:pl-6 relative transition-all duration-300"
+                    >
+                      <span className="absolute -left-3 mt-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full dark:bg-green-400"></span>
+                      <div className="flex items-center space-x-2 mb-1"><GraduationCap className="w-4 h-4" /><h4 className="font-bold text-base sm:text-lg">{edu.degree} @ {edu.institution}</h4></div>
+                      <p className="text-xs sm:text-sm opacity-70 mb-2">{edu.period} · {edu.location}</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm opacity-80">
+                        {edu.bullets.map((b, j) => <li key={j}>{b}</li>)}
+                      </ul>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.section>
+              {/* Lessons */}
+              <motion.section
+                id="lessons"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+                className="relative max-w-5xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8 mt-12
+                  before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-3 before:shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.10)] before:rounded-t-xl"
+              >
+                <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Lessons through the journey 💭</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                  {lessons.map((l, i) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ scale: 1.03, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+                      className="border rounded-lg p-4 sm:p-6 bg-white dark:bg-neutral-950 transition-all duration-300"
+                    >
+                      <div className="flex items-center space-x-2 mb-2"><Quote className="w-4 h-4" /><h4 className="font-semibold truncate">{l.title}</h4></div>
+                      <blockquote className="italic opacity-70 mb-2 text-xs sm:text-base">“{l.quote}” - {l.author}</blockquote>
+                      <p className="text-xs sm:text-sm opacity-80">{l.note}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.section>
+              {/* Contact */}
+              <motion.section
+                id="contact"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }}
+                className="relative max-w-lg mx-auto text-center space-y-3 sm:space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8 mt-12
+                  before:content-[''] before:absolute before:top-0 before:left-0 before:w-full before:h-3 before:shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.10)] before:rounded-t-xl"
+              >
+                <h3 className="text-xl sm:text-2xl font-semibold">Let's build something meaningful</h3>
+                <p className="opacity-80 text-xs sm:text-base">Whether a question, a challenge or a shared vision—I'm here. (Or just say Hi 👋🏾)</p>
+                <ContactForm />
+              </motion.section>
+            </motion.main>
+          )}
+          {/* Blog Tab */}
+          {tab === "blog" && (
+            <motion.main
+              key="blog"
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.98 }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className="p-6 max-w-3xl mx-auto px-4 sm:px-6"
             >
-              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Education 🎓</h3>
-              <div className="relative ml-2 sm:ml-4 border-l-2 border-gray-300 dark:border-neutral-800">
-                {educationItems.map((edu, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="mb-6 sm:mb-8 pl-4 sm:pl-6 relative transition-all duration-300"
-                  >
-                    <span className="absolute -left-3 mt-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full dark:bg-green-400"></span>
-                    <div className="flex items-center space-x-2 mb-1"><GraduationCap className="w-4 h-4" /><h4 className="font-bold text-base sm:text-lg">{edu.degree} @ {edu.institution}</h4></div>
-                    <p className="text-xs sm:text-sm opacity-70 mb-2">{edu.period} · {edu.location}</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm opacity-80">
-                      {edu.bullets.map((b, j) => <li key={j}>{b}</li>)}
-                    </ul>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-            {/* Lessons */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-              className="max-w-5xl mx-auto rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
-            >
-              <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center">Lessons through the journey 💭</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                {lessons.map((l, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="border rounded-lg p-4 sm:p-6 bg-white dark:bg-neutral-950 transition-all duration-300"
-                  >
-                    <div className="flex items-center space-x-2 mb-2"><Quote className="w-4 h-4" /><h4 className="font-semibold truncate">{l.title}</h4></div>
-                    <blockquote className="italic opacity-70 mb-2 text-xs sm:text-base">“{l.quote}” - {l.author}</blockquote>
-                    <p className="text-xs sm:text-sm opacity-80">{l.note}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-            {/* Contact */}
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }}
-              className="max-w-lg mx-auto text-center space-y-3 sm:space-y-4 rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-4 sm:p-8"
-            >
-              <h3 className="text-xl sm:text-2xl font-semibold">Let's build something meaningful</h3>
-              <p className="opacity-80 text-xs sm:text-base">Whether a question, a challenge or a shared vision—I'm here. (Or just say Hi 👋🏾)</p>
-              <ContactForm />
-            </motion.section>
-          </motion.main>
-        )}
-        {/* Blog Tab */}
-        {tab === "blog" && (
-          <motion.main
-            key="blog"
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.98 }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="p-6 max-w-3xl mx-auto px-4 sm:px-6"
-          >
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
-            >
-              {!selected ? (
-                <article>
-                  <h2 className="text-3xl font-bold mb-8">My Ruminations ✍️</h2>
-                  <div className="space-y-8">
-                    {blogPosts.length === 0 && (
-                      <div className="text-gray-500">No blog posts found.</div>
-                    )}
-                    {blogPosts.map(post => (
-                      <motion.div
-                        key={post.slug}
-                        whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                        className="border-b pb-4 transition-all duration-300"
-                      >
-                        <button
-                          onClick={() => setSelected(post)}
-                          className="text-xl font-semibold text-blue-600 hover:underline"
+              <motion.section
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
+              >
+                {!selected ? (
+                  <article>
+                    <h2 className="text-3xl font-bold mb-8">My Ruminations ✍️</h2>
+                    <div className="space-y-8">
+                      {blogPosts.length === 0 && (
+                        <div className="text-gray-500">No blog posts found.</div>
+                      )}
+                      {blogPosts.map(post => (
+                        <motion.div
+                          key={post.slug}
+                          whileHover={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+                          className="border-b pb-4 transition-all duration-300"
                         >
-                          {post.title}
-                        </button>
-                        <p className="text-xs text-gray-500 mt-1">{post.date}</p>
-                        <div className="mt-2 text-gray-700 dark:text-gray-300">
-                          <div className="prose dark:prose-invert">
-                            {/* Affiche le début du contenu */}
-                            <ReactMarkdown>
-                              {post.content.slice(0, 200) + (post.content.length > 200 ? '...' : '')}
-                            </ReactMarkdown>
+                          <button
+                            onClick={() => setSelected(post)}
+                            className="text-xl font-semibold text-blue-600 hover:underline"
+                          >
+                            {post.title}
+                          </button>
+                          <p className="text-xs text-gray-500 mt-1">{post.date}</p>
+                          <div className="mt-2 text-gray-700 dark:text-gray-300">
+                            <div className="prose dark:prose-invert">
+                              {/* Affiche le début du contenu */}
+                              <ReactMarkdown>
+                                {post.content.slice(0, 200) + (post.content.length > 200 ? '...' : '')}
+                              </ReactMarkdown>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </article>
-              ) : (
-                <article>
-                  <button onClick={() => setSelected(null)} className="text-blue-600 hover:underline mb-4">← Back to articles</button>
-                  <div className="prose dark:prose-invert max-w-none">
-                    <ReactMarkdown>{selected.content}</ReactMarkdown>
-                  </div>
-                </article>
-              )}
-            </motion.section>
-          </motion.main>
-        )}
-        {/* Explore Ideas Tab */}
-        {tab === "explore" && (
-          <motion.main
-            key="explore"
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -30, scale: 0.98 }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-            className="p-6 max-w-4xl mx-auto px-4 sm:px-6"
-          >
-            <motion.section
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
-            >
-              <h2 className="text-3xl font-bold mb-8 text-center">Explore Ideas</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {exploreIdeasResources.map((res, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ scale: 1.03, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
-                    className="border rounded-lg p-6 bg-white dark:bg-neutral-950 flex flex-col justify-between transition-all duration-300"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        {res.type === "github" && <Github className="w-5 h-5" />} 
-                        {res.type === "article" && <BookOpen className="w-5 h-5" />} 
-                        {res.type === "webpage" && <BookOpen className="w-5 h-5" />} 
-                        {res.type === "twitter" && <span className="font-bold text-lg">🐦</span>} 
-                        <a
-                          href={res.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold underline hover:opacity-80 transition-colors text-gray-900 dark:text-gray-100"
-                        >
-                          {res.name}
-                        </a>
-                      </div>
-                      <p className="text-sm text-gray-500 mb-1">{res.author && `by ${res.author}`}</p>
-                      <p className="text-sm opacity-80 mb-2">{res.description}</p>
+                        </motion.div>
+                      ))}
                     </div>
-                    {res.stars && (
-                      <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
-                        <Star className="w-3 h-3" /> {res.stars.toLocaleString()} stars
+                  </article>
+                ) : (
+                  <article>
+                    <button onClick={() => setSelected(null)} className="text-blue-600 hover:underline mb-4">← Back to articles</button>
+                    <div className="prose dark:prose-invert max-w-none">
+                      <ReactMarkdown>{selected.content}</ReactMarkdown>
+                    </div>
+                  </article>
+                )}
+              </motion.section>
+            </motion.main>
+          )}
+          {/* Explore Ideas Tab */}
+          {tab === "explore" && (
+            <motion.main
+              key="explore"
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -30, scale: 0.98 }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className="p-6 max-w-4xl mx-auto px-4 sm:px-6"
+            >
+              <motion.section
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="rounded-xl shadow-lg bg-white/80 dark:bg-neutral-950/90 p-8"
+              >
+                <h2 className="text-3xl font-bold mb-8 text-center">Explore Ideas</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {exploreIdeasResources.map((res, i) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ scale: 1.03, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+                      className="border rounded-lg p-6 bg-white dark:bg-neutral-950 flex flex-col justify-between transition-all duration-300"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          {res.type === "github" && <Github className="w-5 h-5" />} 
+                          {res.type === "article" && <BookOpen className="w-5 h-5" />} 
+                          {res.type === "webpage" && <BookOpen className="w-5 h-5" />} 
+                          {res.type === "twitter" && <span className="font-bold text-lg">🐦</span>} 
+                          <a
+                            href={res.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold underline hover:opacity-80 transition-colors text-gray-900 dark:text-gray-100"
+                          >
+                            {res.name}
+                          </a>
+                        </div>
+                        <p className="text-sm text-gray-500 mb-1">{res.author && `by ${res.author}`}</p>
+                        <p className="text-sm opacity-80 mb-2">{res.description}</p>
                       </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-          </motion.main>
-        )}
-      </AnimatePresence>
-      {/* Afficher le footer seulement quand le contenu principal est prêt */}
-      {(!isLoading && (!hasLoaded ? false : true)) && (
-        <footer className="text-center py-8 text-xs opacity-60">© {new Date().getFullYear()} Mohamed Diop</footer>
-      )}
+                      {res.stars && (
+                        <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
+                          <Star className="w-3 h-3" /> {res.stars.toLocaleString()} stars
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.section>
+            </motion.main>
+          )}
+        </AnimatePresence>
+        {/* ...existing footer... */}
+      </div>
     </div>
   );
 }
